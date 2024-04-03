@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import ConfirmationDialog from "./ConfirmationDialog"; // Import the ConfirmationDialog component
+import UploadPopup from "./UploadPopup";
 
 const ChatUI = () => {
   const [input, setInput] = React.useState("");
@@ -109,9 +110,11 @@ const ChatUI = () => {
     >
       <AppBar position="static">
         <Toolbar>
+
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             AskNarelle
           </Typography>
+          <UploadPopup />
           <Button color="inherit" onClick={handleNewQuestion} style={{ backgroundColor: 'black' }}>
             Reset Chat
           </Button>
@@ -129,7 +132,7 @@ const ChatUI = () => {
           <Message key={message.id} message={message} />
         ))}
       </Box>
-      <Box sx={{ p: 2, backgroundColor: "background.default" }}>
+      <Box sx={{ p: 3, backgroundColor: "background.default" }}>
         <Grid container spacing={2}>
           <Grid item xs={10}>
             <TextField
@@ -154,6 +157,7 @@ const ChatUI = () => {
             </Button>
           </Grid>
         </Grid>
+
       </Box>
       <ConfirmationDialog
         open={openDialog}

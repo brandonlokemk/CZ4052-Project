@@ -107,12 +107,12 @@ const ChatUI = () => {
         bgcolor: "grey.200",
       }}
     >
-      <AppBar position="static">
+      <AppBar position="static" style={{ backgroundColor: 'black' }}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            AskNarelle
+            RAGster
           </Typography>
-          <Button color="inherit" onClick={handleNewQuestion} style={{ backgroundColor: 'black' }}>
+          <Button color="inherit" onClick={handleNewQuestion} style={{ backgroundColor: 'red' }}>
             Reset Chat
           </Button>
         </Toolbar>
@@ -148,6 +148,7 @@ const ChatUI = () => {
               color="primary"
               variant="contained"
               endIcon={<SendIcon />}
+              style={{ backgroundColor: 'black' }}
               onClick={handleSend}
             >
               Send

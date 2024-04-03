@@ -53,15 +53,15 @@ except Exception as e:
 
 #vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings())
 
-system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-human_template = "{text}"
-human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+# system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+# human_template = "{text}"
+# human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
 
-chat_prompt = ChatPromptTemplate.from_messages(
-    [system_message_prompt, human_message_prompt]
-)
+# chat_prompt = ChatPromptTemplate.from_messages(
+#     [system_message_prompt, human_message_prompt]
+# )
 
-chat = ChatOpenAI(temperature=0)
+# chat = ChatOpenAI(temperature=0)
 
 # @app.route('/getAns', methods=['POST', 'OPTIONS'])
 # def getAnswer():
@@ -104,4 +104,4 @@ chat = ChatOpenAI(temperature=0)
 #         return jsonify({"Status":"Failure --- Error with OpenAI API"})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("PORT"))

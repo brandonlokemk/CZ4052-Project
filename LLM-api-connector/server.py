@@ -9,6 +9,7 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 from langchain_openai import ChatOpenAI
+from langchain_pinecone import PineconeVectorStore
 import pymongo
 from bson.objectid import ObjectId
 
@@ -25,7 +26,7 @@ try:
     db = client.test
     collection = db.prompts
 
-    # Fetch the document by _id
+    # Fetch the document by _id (Hardcoded for example)
     document = collection.find_one({"_id": ObjectId("660d334aa446317f0c7e55a6")})
 
     # Check if document exists
@@ -35,73 +36,79 @@ try:
         
         # Print the prompt
         print("Prompt:", prompt)
+        system_message_prompt = SystemMessagePromptTemplate.from_template(prompt)
     else:
         print("Document not found.")
-
-    # Perform your operations here (e.g., fetch document)
-    # ...
-
 except Exception as e:
-    print("An error occurred:", e)
+    print("An error occurred, unable to fetch prompt template from Mongo Atlas:", e)
 
+# Instantiate connection to Pinecone
+try:
+    embedding_generator = OpenAIEmbeddings(model="text-embedding-ada-002",openai_api_key=os.getenv("OPENAI_API_KEY"))
+    index_name = os.getenv("PINECONE_INDEX")
+    vectorstore = PineconeVectorStore(
+        index_name=os.getenv("PINECONE_INDEX"),
+        embedding=OpenAIEmbeddings(model="text-embedding-ada-002")
+    )
 
-# CONNECTION_STRING = os.getenv("MONGO_URI")
-# NAMESPACE = "testdb.testcollection"
-# vectorstore = AzureCosmosDBVectorSearch.from_connection_string(
-#     CONNECTION_STRING, NAMESPACE, OpenAIEmbeddings(), index_name="AN-testindex"
-# )
+    print("Connected to Pinecone")
+except Exception as e:
+    print("Error occurred, unable to connect to Pinecone")
 
-#vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings())
+# LLM functions 
+human_template = """
+Context: {context}
 
-# system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-# human_template = "{text}"
-# human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+History: {history}
 
-# chat_prompt = ChatPromptTemplate.from_messages(
-#     [system_message_prompt, human_message_prompt]
-# )
+Query: {query}
+"""
+human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
 
-# chat = ChatOpenAI(temperature=0)
+chat_prompt = ChatPromptTemplate.from_messages(
+    [system_message_prompt, human_message_prompt]
+)
 
-# @app.route('/getAns', methods=['POST', 'OPTIONS'])
-# def getAnswer():
-#     if request.method == 'OPTIONS':
-#         # Respond to preflight request
-#         response = jsonify({'status': 'success'})
-#         response.headers['Access-Control-Allow-Origin'] = '*'  # Adjust as needed
-#         response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
-#         response.headers['Access-Control-Allow-Methods'] = 'POST'
-#         return response
+chat = ChatOpenAI(temperature=0)
+
+@app.route('/getAns', methods=['POST', 'OPTIONS'])
+def getAnswer():
+    if request.method == 'OPTIONS':
+        # Respond to preflight request
+        response = jsonify({'status': 'success'})
+        response.headers['Access-Control-Allow-Origin'] = '*'  # Adjust as needed
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        response.headers['Access-Control-Allow-Methods'] = 'POST'
+        return response
     
-#     try: 
-#         data = request.get_json()
-#         prompt = data.get("userInput","") # Default set the input to blank
-#         history = data.get("chatHistory", "") # Default set to blank
+    try: 
+        data = request.get_json()
+        prompt = data.get("userInput","") # Default set the input to blank
+        history = data.get("chatHistory", "") # Default set to blank
 
-#         if len(history) >= 4:
-#             history[:] = history[-4:]
+        if len(history) >= 4:
+            history[:] = history[-4:]
 
-#         # docs = vectorstore.similarity_search(prompt, k=3)
+        docs = vectorstore.similarity_search(prompt, k=3)
 
-#         if docs == []:
-#             vector_result = "Not sure of the answer"
-#         else:
-#             temp = []
-#             for i in range(len(docs)):
-#                 temp.append([docs[i].page_content])
-#             vector_result = str(temp)
-#             # vector_result = docs[0].page_content
-#             print(vector_result)
+        if docs == []:
+            vector_result = "Not sure of the answer"
+        else:
+            temp = []
+            for i in range(len(docs)):
+                temp.append([docs[i].page_content])
+            vector_result = str(temp)
+            print(vector_result)
 
-#         reply = chat(
-#             chat_prompt.format_prompt(
-#                 context=vector_result, history=history, text=prompt
-#             ).to_messages()
-#         )
+        reply = chat(
+            chat_prompt.format_prompt(
+                context=vector_result, history=history, query=prompt
+            ).to_messages()
+        )
 
-#         return {"Answer":reply.content}
-#     except:
-#         return jsonify({"Status":"Failure --- Error with OpenAI API"})
+        return {"Answer":reply.content}
+    except:
+        return jsonify({"Status":"Failure --- Error with OpenAI API"})
 
 if __name__ == "__main__":
     app.run(debug=True, port=os.getenv("PORT"))

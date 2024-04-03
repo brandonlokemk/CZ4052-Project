@@ -1,38 +1,47 @@
 import React, { useState } from 'react';
 import axios from "axios"; 
 import { 
-  Box,
   TextField,
   Button,
-  Typography,
-  Avatar,
   Grid,
-  Paper,
-  AppBar,
-  Toolbar,
 } from "@mui/material"
 import SendIcon from "@mui/icons-material/Send";
 
 const UploadPopup = () => {
   const [showPopup, setShowPopup] = useState(false);
-  const [files, setFiles] = useState([]);
+  // const [files, setFiles] = useState([]);
+  const [selectedFile, setSelectedFile] = useState([]);
   const [promptContent, setPromptContent] = useState('');
 
   const togglePopup = () => {
     setShowPopup(!showPopup);
   };
+  // const handleFileChange = (event) => {
+  //   const fileList = Array.from(event.target.files);
+  //   setFiles(fileList);
+  // };
   const handleFileChange = (event) => {
-    const fileList = Array.from(event.target.files);
-    setFiles(fileList);
+    setSelectedFile(event.target.files[0]);
   };
   const handleTextFieldChange = (event) => {
     // This function will be called whenever the content of the TextField changes
     setPromptContent(event.target.value);
   };
 
-  const handleUpload = () => {
-    // Handle file upload logic here
-    console.log('Uploaded files:', files);
+  const handleUpload = async () => {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      await axios.post('http://localhost:5000/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      alert('File uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading file: ', error);
+    }
   };
 
   const handlePromptChange = async() => {
@@ -76,9 +85,9 @@ const UploadPopup = () => {
               <Grid item xs={1} className='upload-files' style={{ display: 'flex', flex: 1, background:'gray', height:'100%', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'5px'}}>
                 <input type="file" onChange={handleFileChange} multiple />
                 <div style={{ color: 'black' }}>
-                  {files.map((file, index) => (
+                  {/* {selectedFile.map((file, index) => (
                     <div key={index}>{file.name}</div>
-                  ))}
+                  ))} */}
                 </div>
                 <button onClick={handleUpload}>Upload</button>
               </Grid>  

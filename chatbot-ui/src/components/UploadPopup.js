@@ -33,7 +33,7 @@ const UploadPopup = () => {
     formData.append('file', selectedFile);
 
     try {
-      await axios.post('http://localhost:5000/upload', formData, {
+      await axios.post('http://localhost:3003/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

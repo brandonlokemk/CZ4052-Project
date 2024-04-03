@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
-
+import axios from "axios"; 
 import { 
   TextField,
   Button,
@@ -12,6 +11,7 @@ const UploadPopup = () => {
   const [showPopup, setShowPopup] = useState(false);
   // const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState([]);
+  const [promptContent, setPromptContent] = useState('');
 
   const togglePopup = () => {
     setShowPopup(!showPopup);
@@ -22,6 +22,10 @@ const UploadPopup = () => {
   // };
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
+  };
+  const handleTextFieldChange = (event) => {
+    // This function will be called whenever the content of the TextField changes
+    setPromptContent(event.target.value);
   };
 
   const handleUpload = async () => {
@@ -40,10 +44,23 @@ const UploadPopup = () => {
     }
   };
 
+  const handlePromptChange = async() => {
+    try {
+      const payload = {
+        _id: "660d334aa446317f0c7e55a6",
+        content: JSON.stringify(promptContent),
+      };
+    
+      await axios.post('http://localhost:3001/save-prompt', payload)
+     } catch (error) {
+      console.error('Error in the API call:', error);
+    }
+  }
+
   return (
     // <div style={{padding: '50px'}}>
     <div>
-      <Button color="inherit" onClick={togglePopup} style={{marginRight: '10px', background:'black'}}> Upload/Edit </Button>
+      <Button color="inherit" onClick={togglePopup} style={{marginRight: '10px', background:'red'}}> Admin Panel </Button>
         {showPopup && (
           <div
             style={{
@@ -86,8 +103,10 @@ const UploadPopup = () => {
                       minRows={8}
                       maxRows={15}
                       variant="filled"
-                      placeholder='Enter details here'
+                      placeholder='Enter prompt here'
                       style={{ width: '100'}}
+                      value={promptContent}
+                      onChange={handleTextFieldChange}
                     />
                   </div>
                   <div style={{display:'flex', flexDirection:'column', alignItems:'center', marginTop:'10px'}}>
@@ -96,10 +115,10 @@ const UploadPopup = () => {
                       color="primary"
                       variant="contained"
                       style={{padding: '6px 30px'}}
-
+                      onClick={handlePromptChange}
                       // endIcon={<SendIcon />}
                     >
-                      Edit
+                      Update prompt
                     </Button>
                   </div>
                 </div>

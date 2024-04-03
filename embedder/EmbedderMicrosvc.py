@@ -74,6 +74,6 @@ def embed_and_store_chunks(chunks):
         raise RuntimeError(f"Error embedding and storing chunks into Pinecone: {e}")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("PORT"))
 
 

@@ -31,7 +31,7 @@ const ChatUI = () => {
           content: JSON.stringify(messages),
         };
 
-        await axios.post('http://localhost:3001/save-text', payload)
+        await axios.post('http://localhost:3001/save-conversation', payload)
           .then(response => {
             if (!conversationId || conversationId == '') {
               setConversationId(response.data._id);
@@ -56,7 +56,7 @@ const ChatUI = () => {
       setInput("");
   
       try {
-        const response = await axios.post('http://localhost:5000/getAns', {
+        const response = await axios.post('http://localhost:3002/getAns', {
           userInput: input,
           chatHistory: messages
         });

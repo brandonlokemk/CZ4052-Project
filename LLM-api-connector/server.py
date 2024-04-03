@@ -3,42 +3,66 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv, find_dotenv
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores.azure_cosmos_db import (
-    AzureCosmosDBVectorSearch,
-    CosmosDBSimilarityType,
-)
 from langchain.prompts.chat import (
     ChatPromptTemplate,
     HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
 )
 from langchain_openai import ChatOpenAI
+from langchain_pinecone import PineconeVectorStore
+import pymongo
+from bson.objectid import ObjectId
 
 load_dotenv(find_dotenv("./config/.env"))
 
 app = Flask(__name__)
 CORS(app)
 
-CONNECTION_STRING = os.getenv("MONGO_URI")
-NAMESPACE = "testdb.testcollection"
-vectorstore = AzureCosmosDBVectorSearch.from_connection_string(
-    CONNECTION_STRING, NAMESPACE, OpenAIEmbeddings(), index_name="AN-testindex"
-)
+# Instantiate connection to Mongo Atlas
+try:
+    client = pymongo.MongoClient(os.getenv("MONGO_URI"))
 
-#vectorstore = Chroma(persist_directory="./chroma_db", embedding_function=OpenAIEmbeddings())
+    # Access the database and collection
+    db = client.test
+    collection = db.prompts
 
-template = """ 
-You are AskNarelle, a FAQ (Frequently Asked Questions) chatbot that is designed to answer course-related queries by undergraduate students.
-You are to use the provided piece(s) of context to answer any question. 
-If you do not know the answer or there is no context provided, just reply with "Sorry, I'm not sure.", do not try to make up your own answer.
-You are also to required to keep the answers as concise as possible, but do not leave out any important details.
+    # Fetch the document by _id (Hardcoded for example)
+    document = collection.find_one({"_id": ObjectId("660d334aa446317f0c7e55a6")})
 
+    # Check if document exists
+    if document:
+        # Access the "prompt" field from the fetched document
+        prompt = document.get("prompt")
+        
+        # Print the prompt
+        print("Prompt:", prompt)
+        system_message_prompt = SystemMessagePromptTemplate.from_template(prompt)
+    else:
+        print("Document not found.")
+except Exception as e:
+    print("An error occurred, unable to fetch prompt template from Mongo Atlas:", e)
+
+# Instantiate connection to Pinecone
+try:
+    embedding_generator = OpenAIEmbeddings(model="text-embedding-ada-002",openai_api_key=os.getenv("OPENAI_API_KEY"))
+    index_name = os.getenv("PINECONE_INDEX")
+    vectorstore = PineconeVectorStore(
+        index_name=os.getenv("PINECONE_INDEX"),
+        embedding=OpenAIEmbeddings(model="text-embedding-ada-002")
+    )
+
+    print("Connected to Pinecone")
+except Exception as e:
+    print("Error occurred, unable to connect to Pinecone")
+
+# LLM functions 
+human_template = """
 Context: {context}
 
-Chat History (May or may not be empty): {history}
+History: {history}
+
+Query: {query}
 """
-system_message_prompt = SystemMessagePromptTemplate.from_template(template)
-human_template = "{text}"
 human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
 
 chat_prompt = ChatPromptTemplate.from_messages(
@@ -74,12 +98,11 @@ def getAnswer():
             for i in range(len(docs)):
                 temp.append([docs[i].page_content])
             vector_result = str(temp)
-            # vector_result = docs[0].page_content
             print(vector_result)
 
         reply = chat(
             chat_prompt.format_prompt(
-                context=vector_result, history=history, text=prompt
+                context=vector_result, history=history, query=prompt
             ).to_messages()
         )
 
@@ -88,4 +111,4 @@ def getAnswer():
         return jsonify({"Status":"Failure --- Error with OpenAI API"})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=os.getenv("PORT"))

@@ -1,34 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useReducer } from 'react';
 import axios from "axios"; 
 import { 
+  Typography,
   TextField,
   Button,
   Grid,
 } from "@mui/material"
+import { styled } from '@mui/material/styles';
+
+import { FileUpload } from 'primereact/fileupload';
+// import { Uploader, Button } from 'rsuite';
+// import 'rsuite/Uploader/styles/index.css';
+
 import SendIcon from "@mui/icons-material/Send";
+
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 const UploadPopup = () => {
   const [showPopup, setShowPopup] = useState(false);
-  // const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState([]);
   const [promptContent, setPromptContent] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const togglePopup = () => {
     setShowPopup(!showPopup);
   };
-  // const handleFileChange = (event) => {
-  //   const fileList = Array.from(event.target.files);
-  //   setFiles(fileList);
-  // };
-  const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]);
+  const handleFileChange = (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
   };
+
+
+
   const handleTextFieldChange = (event) => {
     // This function will be called whenever the content of the TextField changes
     setPromptContent(event.target.value);
   };
 
+  const uploader = useRef();
+
   const handleUpload = async () => {
+    console.log(selectedFile)
+  
     const formData = new FormData();
     formData.append('file', selectedFile);
 
@@ -39,6 +64,11 @@ const UploadPopup = () => {
         }
       });
       alert('File uploaded successfully');
+      if (selectedFile.length != 0)  {
+        setUploadedFiles(prevFiles => [...prevFiles, selectedFile.name]);
+        setSelectedFile(null); // Clear selected file after upload
+
+      }
     } catch (error) {
       console.error('Error uploading file: ', error);
     }
@@ -64,8 +94,9 @@ const UploadPopup = () => {
         {showPopup && (
           <div
             style={{
-              width:'80%',
-              height: '50%',
+              backgroundColor: '  white',
+              width:'90%',
+              height: '80%',
               display: 'flex',
               flexDirection: 'column',
               alignItems:'center',
@@ -73,62 +104,103 @@ const UploadPopup = () => {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              backgroundColor: '#ffffff',
-              padding: '20px',
+              paddingLeft: '20px',
+              paddingRight: '20px',
               boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
               borderRadius: '8px',
-              zIndex: '999',
+              zIndex: '999'
             }}
           >
-            <h2 style={{ color: 'black', textAlign: 'center' }}>Admin Panel</h2>
-            <Grid className="box-content" style={{ display: 'flex', background:'white', alignItems: 'center', justifyContent:'center', gap:'5%', width:"100%", height:'100%'}}>
-              <Grid item xs={1} className='upload-files' style={{ display: 'flex', flex: 1, background:'gray', height:'100%', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'5px'}}>
-                <input type="file" onChange={handleFileChange} multiple />
-                <div style={{ color: 'black' }}>
-                  {/* {selectedFile.map((file, index) => (
-                    <div key={index}>{file.name}</div>
-                  ))} */}
-                </div>
-                <button onClick={handleUpload}>Upload</button>
-              </Grid>  
-              
-              <Grid item xs={1} className='edit-prompt' style={{ flex: 1,  color:'black'}}>
-                <div style={{display: 'flex', flexDirection: 'column', background: 'white'}}>
-                  <div style={{ width: '100%'}}>
-                    <TextField
-                      fullWidth
-                      id="outlined-multiline-standard"
-                      label="Edit Prompt"
-                      multiline
-                      minRows={8}
-                      maxRows={15}
-                      variant="filled"
-                      placeholder='Enter prompt here'
-                      style={{ width: '100'}}
-                      value={promptContent}
-                      onChange={handleTextFieldChange}
-                    />
-                  </div>
-                  <div style={{display:'flex', flexDirection:'column', alignItems:'center', marginTop:'10px'}}>
+            <Typography style={{paddingTop:'10px', paddingBottom:'10px'}}variant="h4" color={'black'}>
+            Admin Panel
+          </Typography>
+            {/* <h2 style={{color:'black'}}>Admin Panel</h2> */}
+            <div style={{display:'flex', flexDirection:'row', flex: 1, backgroundColor:'gray', height:'100%', width:'100%', borderRadius:'15px', overflow:'scroll'}}>
+              <div style={{backgroundColor:'#353551', flex: '0 0 50%', overflow:'scroll'}}>
+              {/* <div style={{backgroundColor:'#353551', flex: '0 0 50%', overflow:'scroll'}}> */}
+
+                {/* <FileUpload name="demo[]" url={'/api/upload'} multiple accept="pdf/*" maxFileSize={1000000} emptyTemplate={<p className="m-0">Drag and drop files to here to upload.</p>} /> */}
+                <div style={{display:'flex', flexDirection:'column', alignItems:'center'}}>
+                <Typography style={{paddingTop:'10px', paddingBottom:'10px'}}variant="h6" color={'white'}>
+                      Currently Selected:
+                    </Typography>
+                  <div style={{display:'flex', flexDirection:'row', marginTop:'10px', width:'100%', justifyContent:'center', gap:'40px'}}>
                     <Button
-                      // fullWidth
-                      color="primary"
+                      InputProps={{
+                        style: {color:'white'} // Change color to your desired color
+                      }}
+                      component="label"
+                      role={undefined}
                       variant="contained"
-                      style={{padding: '6px 30px'}}
-                      onClick={handlePromptChange}
-                      // endIcon={<SendIcon />}
+                      tabIndex={-1}
+                      single
+                      // startIcon={<CloudUploadIcon />}
+                      onChange={handleFileChange}
                     >
-                      Update prompt
+                      Upload file
+                      <VisuallyHiddenInput type="file" />
                     </Button>
+
+                    {/* <div> */}
+                  {/* <Typography style={{paddingTop:'10px', paddingBottom:'10px'}}variant="h6" color={'white'}>
+                      Currently Selected:
+                    </Typography> */}
+                    {selectedFile && (
+                      <div style={{textAlign:'center'}}>
+                        <p>{selectedFile.name}</p>
+                      </div>
+                    )}
+                  {/* </div> */}
+                    <Button color="inherit" onClick={handleUpload} style={{ backgroundColor: 'white', color:'black', alignItems:'center'}}>Upload</Button>
+                  </div>
+
+                  <hr style={{ width: '100%', borderWidth:'1px', backgroundColor: 'gray', marginTop:'20px'}} />                  
+
+                  {/* <input type="file" multiple onChange={handleFileChange} /> */}
+                  <Typography style={{paddingTop:'10px', paddingBottom:'10px'}}variant="h6" color={'white'}>
+                      Uploaded Files:
+                    </Typography>
+                  
+                  <div style={{textAlign:'center', paddingRight:'20px'}}>
+                    {uploadedFiles.length > 0 && (
+                    <div style={{textAlign:'center'}}> 
+                      <ol style={{textAlign:'center', }} >
+                        {uploadedFiles.map((file, index) => (
+                          <li style={{textAlign:'center'}} key={index}>{file}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                   </div>
                 </div>
+              </div>
+              <div style={{ backgroundColor:'#EFEFF8', display:'flex', flexDirection:'column', width:'100%', alignItems:'center'}}>
+                <TextField
+                InputProps={{
+                  style: { color: 'black',  backgroundColor:'#ECECF6'} // Change color to your desired color
+                }}
+                // InputProps={{sx: {height:'85%'}}}
+                  id="filled-multiline-static"
+                  label="Edit Prompt"
+                  multiline
+                  // minRows={22}
+                  rows={18}
+                  // defaultValue=""
+                  variant='filled'
+                  fullWidth
+                  height="100%"
+                  value={promptContent}
+                  onChange={handleTextFieldChange}
+                />
+                <Button variant="contained" endIcon={<SendIcon />} onClick={handlePromptChange} style={{width:'30%', backgroundColor: 'black', color:'white', marginTop:'20px'}}>Edit</Button>
+              </div>
 
 
-                
-              </Grid>
-            </Grid>
-            <div>
-              <button onClick={togglePopup} style={{padding: '5px'}}>Close</button>
+
+            </div>
+            <div style={{padding:'15px'}}>
+              {/* <button onClick={togglePopup} style={{padding: '5px'}}>Close</button> */}
+              <Button color="inherit" onClick={togglePopup} style={{ backgroundColor: 'black', color:'white'}}>Close</Button>
             </div>
           </div>
         )}
